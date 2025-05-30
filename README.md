@@ -81,7 +81,7 @@ php artisan serve
 - **Email:** admin@test.com
 - **Password:** password
 
-> Change the password after first login for security!
+
 
 ---
 
