@@ -5,7 +5,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Form;
-use App\Models\FormField;
 
 class FormSeeder extends Seeder
 {
@@ -63,7 +62,7 @@ class FormSeeder extends Seeder
                 'name' => 'rating',
                 'order_index' => 1,
                 'required' => true,
-                'options' => json_encode(['Excellent', 'Good', 'Average', 'Poor']),
+                'meta' => json_encode(['options' => ['Excellent', 'Good', 'Average', 'Poor']]),
             ],
             [
                 'label' => 'Comments',

@@ -27,6 +27,17 @@ class FormController extends Controller
         ]);
     }
 
+    public function edit($id)
+    {
+        $forms = $this->service->getFormById($id);
+        if (!$forms) {
+            return redirect()->route('forms.index')->with('error', 'Form not found.');
+        }
+        return Inertia::render('Forms/edit', [
+            'form' =>  $forms
+        ]);
+    }
+
     public function create()
     {
         return Inertia::render('Forms/create');
@@ -44,13 +55,13 @@ class FormController extends Controller
 
     public function update(UpdateFormRequest $request, Form $form)
     {
-        $this->service->updateFormWithFields(
+       return  $this->service->updateFormWithFields(
             $form->id,
             $request->only(['title', 'method', 'action']),
             $request->input('fields')
         );
 
-        return redirect()->route('forms.index')->with('success', 'Form updated.');
+        //return redirect()->route('forms.index')->with('success', 'Form updated.');
     }
     public function destroy($id)
     {

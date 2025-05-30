@@ -19,7 +19,7 @@ class HomeController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function Home()
+    public function home()
     {
         return Inertia::render("Home/index");
     }

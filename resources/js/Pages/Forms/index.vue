@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-indigo-700">Form List</h1>
         <button
-          @click="router.visit('/form/create')"
+          @click="router.visit('/admin/form/create')"
           class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-full shadow transition hover:curs hover:pointer cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,7 +121,7 @@ function toggleDropdown(id) {
 
 function editForm(id) {
   dropdownOpen.value = null
-  router.visit(`/forms/${id}/edit`)
+  router.visit(`/admin/form/edit/${id}/`)
 }
 
 async function deleteForm(id) {

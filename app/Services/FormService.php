@@ -26,11 +26,14 @@ class FormService
     public function updateFormWithFields($formId, array $formData, array $fields)
     {
         $form = $this->formRepo->update($formId, $formData);
-        $form->fields()->delete(); // simple replace strategy
+        if (!$form) {
+            return false;
+        }
+        $form->fields()->delete(); 
         foreach ($fields as $index => $field) {
             $form->fields()->create(array_merge($field, ['order_index' => $index]));
         }
-        return $form;
+        return true;
     }
 
     public function getAllForms()

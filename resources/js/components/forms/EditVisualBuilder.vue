@@ -22,7 +22,7 @@
     </div>
 
     <div class="flex gap-6">
-      <!-- Side Menu: Field Types (Draggable Items, only actual field UI) -->
+      <!-- Side Menu: Field Types (Draggable Items) -->
       <div class="w-1/4 bg-indigo-50 p-4 rounded border h-[400px] overflow-y-auto">
         <h3 class="font-semibold mb-4 text-indigo-700">Drag Field</h3>
         <div
@@ -57,7 +57,7 @@
         </div>
       </div>
 
-      <!-- Form Builder Area (Drop Zone + Draggable Reorder, only field UI with label and remove) -->
+      <!-- Form Builder Area (Drop Zone + Draggable Reorder) -->
       <div
         class="flex-1 bg-white border rounded p-4 min-h-[400px] max-h-[400px] overflow-y-auto"
         @dragover.prevent
@@ -226,10 +226,10 @@
     <div class="flex gap-2">
       <button
         class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 hover:cursor-pointer transition"
-        @click="saveForm"
+        @click="updateForm"
         type="button"
         :disabled="isSaving"
-      >{{ isSaving ? 'Saving...' : 'Save' }}</button>
+      >{{ isSaving ? 'Updating...' : 'Update' }}</button>
       <button
         class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
         type="button"
@@ -240,45 +240,55 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import draggable from 'vuedraggable'
-import type { FormData, FormField, ValidationRules } from '@/types/form'
 import { useFormStore } from '@/stores/formStore'
+import type { FormData, FormField, ValidationRules } from '@/types/form'
 
-const emit = defineEmits(['submitting', 'submitted'])
+const props = defineProps<{ form: FormData }>()
+const emit = defineEmits(['update'])
 
 const formStore = useFormStore()
-
-
-const formTitle = ref<string>('')
-const formMethod = ref<string>('POST')
-const formAction = ref<string>('')
-
+const formTitle = ref('')
+const formMethod = ref('POST')
+const formAction = ref('')
+const builderFields = ref<any[]>([])
+const selectedField = ref<any | null>(null)
+let dragField: any | null = null
 const isSaving = ref(false)
-const errorMsg = ref<string>('')
+const errorMsg = ref('')
 
-interface BuilderField extends Omit<FormField, 'validation_rules'> {
-  id: number
-  optionsString?: string
-  validations?: string[]
-  min?: number
-  max?: number
-  pattern?: string
-}
-
-const availableFields: BuilderField[] = [
+const availableFields: any[] = [
   { type: 'text', label: 'Text Field', name: 'name', placeholder: 'Enter your name', required: false, id: 1 },
   { type: 'email', label: 'Email Field', name: 'email', placeholder: 'Enter your email', required: false, id: 2 },
   { type: 'textarea', label: 'Textarea', name: 'message', placeholder: 'Enter your message', required: false, id: 3 },
   { type: 'select', label: 'Select', name: 'select', placeholder: '', required: false, options: ['Option 1', 'Option 2'], optionsString: 'Option 1, Option 2', id: 4 }
 ]
 
-const builderFields = ref<BuilderField[]>([])
-const selectedField = ref<BuilderField | null>(null)
-let dragField: BuilderField | null = null
+// Prefill on mount or when prop changes
+watch(
+  () => props.form,
+  (val) => {
+    if (val) {
+      formTitle.value = val.title
+      formMethod.value = val.method
+      formAction.value = val.action
+      builderFields.value = val.fields.map((field, idx) => {
+        const f = JSON.parse(JSON.stringify(field))
+        f.id = f.id || Date.now() + idx
+        if (f.type === 'select') {
+          f.optionsString = (f.meta?.options || []).join(', ')
+          f.options = f.meta?.options || []
+        }
+        return f
+      })
+    }
+  },
+  { immediate: true }
+)
 
-function onDragStart(field: BuilderField) {
+function onDragStart(field: any) {
   dragField = {
     ...JSON.parse(JSON.stringify(field)),
     id: Date.now() + Math.random(),
@@ -306,16 +316,15 @@ function removeField(idx: number) {
   builderFields.value.splice(idx, 1)
 }
 
-function selectField(field: BuilderField) {
+function selectField(field: any) {
   selectedField.value = field
 }
 
-function updateOptions(field: BuilderField) {
-  field.options = field.optionsString?.split(',').map(opt => opt.trim()).filter(Boolean)
+function updateOptions(field: any) {
+  field.options = field.optionsString?.split(',').map((opt: string) => opt.trim()).filter(Boolean)
 }
 
-// --- Save handler to build the required JSON ---
-async function saveForm() {
+async function updateForm() {
   errorMsg.value = ''
   // Validation
   if (!formTitle.value.trim()) {
@@ -334,76 +343,44 @@ async function saveForm() {
     errorMsg.value = 'At least one field is required.'
     return
   }
-
-  // Validate select fields: options must be array with at least one string
-  for (const field of builderFields.value) {
-    if (
-      field.type === 'select' &&
-      (!Array.isArray(field.options) || field.options.length < 1 || field.options.some(opt => typeof opt !== 'string' || !opt.trim()))
-    ) {
-      errorMsg.value = 'Each select field must have at least one valid option.'
+  for (const [i, field] of builderFields.value.entries()) {
+    if (!field.type || !field.name || !field.label) {
+      errorMsg.value = `Field #${i + 1}: type, name, and label are required.`
       return
     }
+    if (field.type === 'select') {
+      if (!Array.isArray(field.options) || field.options.length < 1) {
+        errorMsg.value = `Field #${i + 1}: select fields require options with at least one item.`
+        return
+      }
+      if (field.options.some((opt: any) => typeof opt !== 'string' || !opt.trim())) {
+        errorMsg.value = `Field #${i + 1}: all options must be non-empty strings.`
+        return
+      }
+    }
   }
-
-  emit('submitting')
   isSaving.value = true
-
-  const fields: FormField[] = builderFields.value.map(field => {
-    const validation_rules: ValidationRules = {}
-    if (Array.isArray(field.validations)) {
-      field.validations.forEach(rule => {
-        if (rule === 'min' && field.min !== undefined) validation_rules.min = field.min
-        if (rule === 'max' && field.max !== undefined) validation_rules.max = field.max
-        if (rule === 'regex' && field.pattern) validation_rules.regex = field.pattern
-        if (rule === 'email') validation_rules.email = true
-        if (rule === 'number') validation_rules.number = true
-      })
-    }
-    // Add meta with options if type is select
-    const meta = field.type === 'select' ? { options: field.options } : undefined
-
-    return {
-      type: field.type,
-      name: field.name,
-      label: field.label,
-      placeholder: field.placeholder,
-      required: field.required,
-      ...(meta ? { meta } : {}),
-      validation_rules
-    }
-  })
-
-  const formData: FormData = {
+  // Prepare the updated form object
+  const updatedForm = {
+    ...props.form,
     title: formTitle.value,
     method: formMethod.value,
     action: formAction.value,
-    fields
+    fields: builderFields.value.map(f => {
+      if (f.type === 'select') {
+        const { optionsString, ...rest } = f
+        return { ...rest, meta: { options: f.options } }
+      }
+      return f
+    })
   }
-
-  try {
-    await formStore.addForm(formData)
-    // Clear form and store
-    formTitle.value = ''
-    formMethod.value = 'POST'
-    formAction.value = ''
-    builderFields.value = []
-    selectedField.value = null
-    emit('submitted')
-    // Redirect to /forms-list
+  const success = await formStore.updateForm(updatedForm)
+  isSaving.value = false
+  if (success) {
+    emit('update', updatedForm)
     router.visit('/admin/forms-list')
-  } finally {
-    isSaving.value = false
+  } else {
+    errorMsg.value = 'Failed to update form.'
   }
 }
 </script>
-
-<style scoped>
-button[title="Remove"] {
-  cursor: pointer;
-  transition: background 0.15s;
-}
-button[title="Remove"]:hover {
-  background: #fee2e2;
-}
-</style>

@@ -1,32 +1,32 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController;
 
+
+
+// Authentication routes
+Route::get('/login', [LoginController::class, 'show'])->name('login'); // <-- add this line
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-
-Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])
-    ->name('home.index');
-
-    Route::get('/', [App\Http\Controllers\HomeController::class, 'Home'])
-    ->name('home.index');
-
+// Admin-only routes for forms
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+   
+    Route::get('/home', [App\Http\Controllers\HomeController::class,'home'])->name('Home');
     Route::get('/forms-list', [App\Http\Controllers\Admin\FormController::class, 'index'])
-    ->name('forms.index');
-
-Route::get('/form/create', [App\Http\Controllers\Admin\FormController::class, 'create'])
-    ->name('forms.create');
-
+        ->name('forms.index');
+    Route::get('/form/create', [App\Http\Controllers\Admin\FormController::class, 'create'])
+        ->name('forms.create');
     Route::post('/form/store', [App\Http\Controllers\Admin\FormController::class, 'store'])
-    ->name('forms.store');
+        ->name('forms.store');
+    Route::get('/form/edit/{id}', [App\Http\Controllers\Admin\FormController::class, 'edit'])
+        ->name('forms.edit');
+    Route::put('/form/{form}', [App\Http\Controllers\Admin\FormController::class, 'update'])
+        ->name('forms.update');
     Route::post('/form/delete/{id}', [App\Http\Controllers\Admin\FormController::class, 'destroy'])
-    ->name('forms.destroy');
-// Route::get('/form/{form}/edit', [App\Http\Controllers\Admin\FormController::class, 'edit'])
-//     ->name('forms.edit');
-// Route::put('/form/{form}', [App\Http\Controllers\Admin\FormController::class, 'update'])
-//     ->name('forms.update');
-
-// Route::get('/form/{form}/fields', [App\Http\Controllers\Admin\FormFieldController::class, 'index'])
-//     ->name('forms.fields.index');
+        ->name('forms.destroy');
+});

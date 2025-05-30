@@ -14,6 +14,16 @@ export const api = {
       credentials: 'same-origin',
       body: JSON.stringify(data),
     }),
+  put: (url: string, data: any): Promise<Response> =>
+    fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken() || '',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(data),
+    }),
   get: (url: string): Promise<Response> =>
     fetch(url, {
       method: 'GET',

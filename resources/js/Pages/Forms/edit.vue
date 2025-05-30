@@ -9,41 +9,48 @@
           JSON Mode
         </button>
         <button
-          :class="tab === 'builder' ? activeTabClass : inactiveTabClass"
-          @click="tab = 'builder'"
+          :class="tab === 'visual' ? activeTabClass : inactiveTabClass"
+          @click="tab = 'visual'"
         >
-          Builder Mode
+          Visual Mode
         </button>
       </div>
-      <JsonBuilder v-if="tab === 'json'" />
-      <VisualBuilder
+      <EditJsonBuilder
+        v-if="tab === 'json'"
+        :form="form"
+        @update="updateForm"
+      />
+      <EditVisualBuilder
         v-else
-        @submitted="showSuccess = true"
-        @submitting="showSuccess = false"
+        :form="form"
+        @update="updateForm"
       />
       <div
         v-if="showSuccess"
         class="fixed top-6 right-6 bg-green-500 text-white px-4 py-2 rounded shadow z-50"
       >
-        Form saved successfully!
+        Form updated successfully!
       </div>
     </div>
   </Layout>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref, watch } from 'vue'
 import Layout from '@/Layout/App.vue'
-import JsonBuilder from '@/components/forms/JsonBuilder.vue'
-import VisualBuilder from '@/components/forms/VisualBuilder.vue'
+import EditJsonBuilder from '@/components/forms/EditJsonBuilder.vue'
+import EditVisualBuilder from '@/components/forms/EditVisualBuilder.vue'
 
+const props = defineProps<{ form: object }>()
 const tab = ref('json')
 const showSuccess = ref(false)
 const activeTabClass = 'px-4 py-2 border-b-2 border-indigo-600 text-indigo-700 font-semibold focus:outline-none'
 const inactiveTabClass = 'px-4 py-2 text-gray-500 hover:text-indigo-600 focus:outline-none'
 
-// Optional: auto-hide the popup after 2 seconds
-watch(showSuccess, (val) => {
-  if (val) setTimeout(() => (showSuccess.value = false), 2000)
-})
+function updateForm(updatedForm) {
+  // Call your store or API to update the form here
+  // On success:
+  showSuccess.value = true
+  setTimeout(() => (showSuccess.value = false), 2000)
+}
 </script>

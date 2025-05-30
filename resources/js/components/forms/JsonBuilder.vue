@@ -15,7 +15,7 @@
       <button
         class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
         type="button"
-        @click="router.visit('/forms-list')"
+        @click="router.visit('/admin/forms-list')"
       >Cancel</button>
     </div>
   </div>
@@ -94,7 +94,7 @@ async function saveJsonForm() {
     await formStore.addForm(parsed)
     emit('submitted')
     jsonInput.value = ''
-    router.visit('/forms-list')
+    router.visit('/admin/forms-list')
   } catch (e) {
     errorMsg.value = 'Failed to save form.'
   } finally {
