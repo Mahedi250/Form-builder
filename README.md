@@ -14,7 +14,7 @@ This project is a Laravel + Inertia.js + Vue 3 application for managing forms wi
 ### 1. Clone the Repository
 
 ```sh
-git clone <your-repo-url>
+git clone <https://github.com/Mahedi250/Form-builder.git>
 cd form
 ```
 
