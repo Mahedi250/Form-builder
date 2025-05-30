@@ -15,7 +15,7 @@ This project is a Laravel + Inertia.js + Vue 3 application for managing forms wi
 
 ```sh
 git clone https://github.com/Mahedi250/Form-builder.git
-cd form
+cd Form-builder
 ```
 
 ### 2. Install PHP Dependencies
@@ -72,7 +72,7 @@ npm run build
 php artisan serve
 ```
 
-Visit [http://localhost:8000](http://localhost:8000) in your browser.
+
 
 ---
 
@@ -87,7 +87,7 @@ Visit [http://localhost:8000](http://localhost:8000) in your browser.
 
 ## Features
 
-- Admin-only form management (using Spatie Laravel Permission)
+- Admin-only form management 
 - Inertia.js + Vue 3 frontend
 - Example forms and fields seeded
 - Role-based access control
