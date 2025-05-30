@@ -4,6 +4,7 @@
     @vite(['resources/js/app.js'])
 <head>
     @inertiaHead
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
     @inertia

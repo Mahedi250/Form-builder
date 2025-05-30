@@ -1,8 +1,10 @@
 import './bootstrap';
-import {createApp,h} from 'vue';
-import{ createInertiaApp } from '@inertiajs/vue3';
-import '../css/app.css'
+import { createApp, h } from 'vue';
+import { createInertiaApp } from '@inertiajs/vue3';
+import { createPinia } from 'pinia'
+import { api } from '@/lib/api'
 
+import '../css/app.css'
 
 createInertiaApp({
     resolve: name => {
@@ -10,11 +12,12 @@ createInertiaApp({
         return pages[`./Pages/${name}.vue`];
     },
     setup({ el, App, props, plugin }) {
-        createApp({
+        const app = createApp({
             render: () => h(App, props),
-        })
-            .use(plugin)
-            .mount(el);
+        });
+        app.use(plugin);
+        app.use(createPinia());
+        app.config.globalProperties.$api = api;
+        app.mount(el);
     },
-   
 });

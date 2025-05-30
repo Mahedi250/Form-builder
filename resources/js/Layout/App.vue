@@ -9,16 +9,7 @@
         <ul class="space-y-1">
 
            <li>
-            <Link
-              href="/form/create"
-              :class="menuClass('/form/create')"
-              class="w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 gap-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A9 9 0 1112 21a9 9 0 01-6.879-3.196z"></path>
-              </svg>
-              Create Form
-            </Link>
+    
           </li>
           <li>
             <Link

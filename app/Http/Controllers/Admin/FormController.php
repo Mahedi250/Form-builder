@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 use App\Services\FormService;
 use App\Models\Form;
 use Inertia\Inertia;
-use App\Http\Requests\StoreFormRequest;
-use App\Http\Requests\UpdateFormRequest;
+use App\Http\Requests\Form\StoreFormRequest;
+use App\Http\Requests\Form\UpdateFormRequest;
 
 class FormController extends Controller
 {
@@ -52,4 +52,11 @@ class FormController extends Controller
 
         return redirect()->route('forms.index')->with('success', 'Form updated.');
     }
+    public function destroy($id)
+    {
+       return $this->service->deleteForm($id);
+        
+    }
+ 
+    
 }

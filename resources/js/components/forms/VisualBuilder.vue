@@ -1,5 +1,26 @@
 <template>
   <div class="space-y-6 w-full">
+    <!-- Top Section: Title, Method, Action -->
+    <div class="flex flex-wrap gap-4 items-end mb-4">
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-xs font-medium mb-1">Form Title</label>
+        <input v-model="formTitle" class="w-full border rounded px-2 py-1 text-xs" placeholder="Form Title" />
+      </div>
+      <div class="min-w-[120px]">
+        <label class="block text-xs font-medium mb-1">Method</label>
+        <select v-model="formMethod" class="w-full border rounded px-2 py-1 text-xs">
+          <option value="POST">POST</option>
+          <option value="GET">GET</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-xs font-medium mb-1">Action</label>
+        <input v-model="formAction" class="w-full border rounded px-2 py-1 text-xs" placeholder="/api/form" />
+      </div>
+    </div>
+
     <div class="flex gap-6">
       <!-- Side Menu: Field Types (Draggable Items, only actual field UI) -->
       <div class="w-1/4 bg-indigo-50 p-4 rounded border h-[400px] overflow-y-auto">
@@ -197,30 +218,67 @@
         </div>
       </form>
     </div>
+    <!-- Error Message -->
+    <div v-if="errorMsg" class="fixed top-6 right-6 bg-red-500 text-white px-4 py-2 rounded shadow z-50">
+      {{ errorMsg }}
+    </div>
     <!-- Actions -->
     <div class="flex gap-2">
-      <button class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Save</button>
-      <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">Cancel</button>
+      <button
+        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 hover:cursor-pointer transition"
+        @click="saveForm"
+        type="button"
+        :disabled="isSaving"
+      >{{ isSaving ? 'Saving...' : 'Save' }}</button>
+      <button
+        class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+        type="button"
+        @click="router.visit('/forms-list')"
+      >Cancel</button>
     </div>
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 import draggable from 'vuedraggable'
+import type { FormData, FormField, ValidationRules } from '@/types/form'
+import { useFormStore } from '@/stores/formStore'
 
-const availableFields = [
-  { type: 'text', label: 'Text Field', name: 'name', placeholder: 'Enter your name', required: false },
-  { type: 'email', label: 'Email Field', name: 'email', placeholder: 'Enter your email', required: false },
-  { type: 'textarea', label: 'Textarea', name: 'message', placeholder: 'Enter your message', required: false },
-  { type: 'select', label: 'Select', name: 'select', placeholder: '', required: false, options: ['Option 1', 'Option 2'], optionsString: 'Option 1, Option 2' }
+const emit = defineEmits(['submitting', 'submitted'])
+
+const formStore = useFormStore()
+
+
+const formTitle = ref<string>('')
+const formMethod = ref<string>('POST')
+const formAction = ref<string>('')
+
+const isSaving = ref(false)
+const errorMsg = ref<string>('')
+
+interface BuilderField extends Omit<FormField, 'validation_rules'> {
+  id: number
+  optionsString?: string
+  validations?: string[]
+  min?: number
+  max?: number
+  pattern?: string
+}
+
+const availableFields: BuilderField[] = [
+  { type: 'text', label: 'Text Field', name: 'name', placeholder: 'Enter your name', required: false, id: 1 },
+  { type: 'email', label: 'Email Field', name: 'email', placeholder: 'Enter your email', required: false, id: 2 },
+  { type: 'textarea', label: 'Textarea', name: 'message', placeholder: 'Enter your message', required: false, id: 3 },
+  { type: 'select', label: 'Select', name: 'select', placeholder: '', required: false, options: ['Option 1', 'Option 2'], optionsString: 'Option 1, Option 2', id: 4 }
 ]
 
-const builderFields = ref([])
-const selectedField = ref(null)
-let dragField = null
+const builderFields = ref<BuilderField[]>([])
+const selectedField = ref<BuilderField | null>(null)
+let dragField: BuilderField | null = null
 
-function onDragStart(field) {
+function onDragStart(field: BuilderField) {
   dragField = {
     ...JSON.parse(JSON.stringify(field)),
     id: Date.now() + Math.random(),
@@ -241,19 +299,102 @@ function onDrop() {
   }
 }
 
-function removeField(idx) {
+function removeField(idx: number) {
   if (selectedField.value && builderFields.value[idx].id === selectedField.value.id) {
     selectedField.value = null
   }
   builderFields.value.splice(idx, 1)
 }
 
-function selectField(field) {
+function selectField(field: BuilderField) {
   selectedField.value = field
 }
 
-function updateOptions(field) {
-  field.options = field.optionsString.split(',').map(opt => opt.trim()).filter(Boolean)
+function updateOptions(field: BuilderField) {
+  field.options = field.optionsString?.split(',').map(opt => opt.trim()).filter(Boolean)
+}
+
+// --- Save handler to build the required JSON ---
+async function saveForm() {
+  errorMsg.value = ''
+  // Validation
+  if (!formTitle.value.trim()) {
+    errorMsg.value = 'Form title is required.'
+    return
+  }
+  if (!formMethod.value.trim()) {
+    errorMsg.value = 'Form method is required.'
+    return
+  }
+  if (!formAction.value.trim()) {
+    errorMsg.value = 'Form action is required.'
+    return
+  }
+  if (builderFields.value.length === 0) {
+    errorMsg.value = 'At least one field is required.'
+    return
+  }
+
+  // Validate select fields: options must be array with at least one string
+  for (const field of builderFields.value) {
+    if (
+      field.type === 'select' &&
+      (!Array.isArray(field.options) || field.options.length < 1 || field.options.some(opt => typeof opt !== 'string' || !opt.trim()))
+    ) {
+      errorMsg.value = 'Each select field must have at least one valid option.'
+      return
+    }
+  }
+
+  emit('submitting')
+  isSaving.value = true
+
+  const fields: FormField[] = builderFields.value.map(field => {
+    const validation_rules: ValidationRules = {}
+    if (Array.isArray(field.validations)) {
+      field.validations.forEach(rule => {
+        if (rule === 'min' && field.min !== undefined) validation_rules.min = field.min
+        if (rule === 'max' && field.max !== undefined) validation_rules.max = field.max
+        if (rule === 'regex' && field.pattern) validation_rules.regex = field.pattern
+        if (rule === 'email') validation_rules.email = true
+        if (rule === 'number') validation_rules.number = true
+      })
+    }
+    // Add meta with options if type is select
+    const meta = field.type === 'select' ? { options: field.options } : undefined
+
+    return {
+      type: field.type,
+      name: field.name,
+      label: field.label,
+      placeholder: field.placeholder,
+      required: field.required,
+      ...(meta ? { meta } : {}),
+      validation_rules
+    }
+  })
+
+  const formData: FormData = {
+    title: formTitle.value,
+    method: formMethod.value,
+    action: formAction.value,
+    fields
+  }
+
+  try {
+    await formStore.addForm(formData)
+    // Clear form and store
+    formTitle.value = ''
+    formMethod.value = 'POST'
+    formAction.value = ''
+    builderFields.value = []
+    selectedField.value = null
+    emit('submitted')
+    // Redirect to /forms-list
+    router.visit('/forms-list')
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
 

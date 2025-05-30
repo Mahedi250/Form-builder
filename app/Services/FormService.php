@@ -32,4 +32,23 @@ class FormService
         }
         return $form;
     }
+
+    public function getAllForms()
+    {
+        return $this->formRepo->all();
+    }
+
+    public function getFormById($formId)
+    {
+        return $this->formRepo->find($formId);
+    }
+    public function deleteForm($formId)
+    {
+     $form = $this->formRepo->find($formId);
+       if ($form) {
+        $form->delete();
+        return true;
+      }
+      return false;
+    }
 }

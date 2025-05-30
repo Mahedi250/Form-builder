@@ -11,7 +11,7 @@ class StoreFormRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -27,9 +27,11 @@ class StoreFormRequest extends FormRequest
             'action' => 'required|string|max:255',
             'fields' => 'required|array',
             'fields.*.name' => 'required|string',
-            'fields.*.type' => 'required|string',
+            'fields.*.type' => 'required|string|in:text,email,textarea,select',
             'fields.*.label' => 'required|string',
             'fields.*.required' => 'boolean',
+            'fields.*.meta.options' => 'required_if:fields.*.type,select|array|min:1',
+            'fields.*.meta.options.*' => 'required_if:fields.*.type,select|string',
         ];
     }
 }
